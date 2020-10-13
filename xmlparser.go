@@ -2,9 +2,7 @@ package xmlparser
 
 import (
 	"bufio"
-	"fmt"
 	"strings"
-	"unicode/utf8"
 )
 
 type XMLParser struct {
@@ -229,7 +227,8 @@ func (x *XMLParser) getElementTree(result *XMLElement) *XMLElement {
 			}
 
 			if next == '/' { // close tag
-				tag, err := x.closeTagName()
+				var tag string
+				tag, err = x.closeTagName()
 
 				if err != nil {
 					result.Err = err
@@ -442,8 +441,8 @@ search_close_tag:
 			continue
 		}
 
-		if cur == '>' { //if tag name not found
-			if prev == '/' { //tag special close
+		if cur == '>' { // if tag name not found
+			if prev == '/' { // tag special close
 				return result, true, nil
 			}
 			return result, false, nil
@@ -512,23 +511,17 @@ func (x *XMLParser) isComment() (bool, error) {
 }
 
 func (x *XMLParser) isCDATA() (bool, []byte, error) {
-
 	var c byte
 	var b []byte
 	var err error
 
 	b, err = x.reader.Peek(2)
-
 	if err != nil {
 		return false, nil, err
 	}
 
 	if b[0] != '!' {
 		return false, nil, nil
-	}
-
-	if err != nil {
-		return false, nil, err
 	}
 
 	if b[1] != '[' {
@@ -538,19 +531,16 @@ func (x *XMLParser) isCDATA() (bool, []byte, error) {
 
 	// read peaked byte
 	_, err = x.readByte()
-
 	if err != nil {
 		return false, nil, err
 	}
 
 	_, err = x.readByte()
-
 	if err != nil {
 		return false, nil, err
 	}
 
 	c, err = x.readByte()
-
 	if err != nil {
 		return false, nil, err
 	}
@@ -561,7 +551,6 @@ func (x *XMLParser) isCDATA() (bool, []byte, error) {
 	}
 
 	c, err = x.readByte()
-
 	if err != nil {
 		return false, nil, err
 	}
@@ -572,7 +561,6 @@ func (x *XMLParser) isCDATA() (bool, []byte, error) {
 	}
 
 	c, err = x.readByte()
-
 	if err != nil {
 		return false, nil, err
 	}
@@ -594,7 +582,6 @@ func (x *XMLParser) isCDATA() (bool, []byte, error) {
 	}
 
 	c, err = x.readByte()
-
 	if err != nil {
 		return false, nil, err
 	}
@@ -605,7 +592,6 @@ func (x *XMLParser) isCDATA() (bool, []byte, error) {
 	}
 
 	c, err = x.readByte()
-
 	if err != nil {
 		return false, nil, err
 	}
@@ -618,9 +604,7 @@ func (x *XMLParser) isCDATA() (bool, []byte, error) {
 	// this is possibly cdata // ]]>
 	x.scratch.reset()
 	for {
-
 		c, err = x.readByte()
-
 		if err != nil {
 			return false, nil, err
 		}
@@ -630,9 +614,7 @@ func (x *XMLParser) isCDATA() (bool, []byte, error) {
 		}
 
 		x.scratch.add(c)
-
 	}
-
 }
 
 func (x *XMLParser) skipDeclerations() error {
@@ -641,7 +623,7 @@ func (x *XMLParser) skipDeclerations() error {
 	var c, d byte
 	var err error
 
-scan_declartions:
+scanDeclartions:
 	for {
 
 		// when identifying a xml declaration we need to know 2 bytes ahead. Unread works 1 byte at a time so we use Peek and read together.
@@ -659,7 +641,7 @@ scan_declartions:
 				return err
 			}
 
-			if b[1] == '!' || b[1] == '?' { // either comment or decleration
+			if b[1] == '!' || b[1] == '?' { // either comment or declaration
 
 				// read 2 peaked byte
 				_, err = x.readByte()
@@ -719,7 +701,7 @@ skipComment:
 		}
 
 		if c == '>' && len(x.scratch.bytes()) > 1 && x.scratch.bytes()[len(x.scratch.bytes())-1] == '-' && x.scratch.bytes()[len(x.scratch.bytes())-2] == '-' {
-			goto scan_declartions
+			goto scanDeclartions
 		}
 
 		x.scratch.add(c)
@@ -739,7 +721,7 @@ skipDecleration:
 		if c == '>' {
 			depth--
 			if depth == 0 {
-				goto scan_declartions
+				goto scanDeclartions
 			}
 			continue
 		}
@@ -807,13 +789,11 @@ func (x *XMLParser) isWS(in byte) bool {
 }
 
 func (x *XMLParser) sendError() {
-	err := fmt.Errorf("Invalid xml")
-	x.resultChannel <- &XMLElement{Err: err}
+	x.resultChannel <- &XMLElement{Err: ErrInvalidXML}
 }
 
 func (x *XMLParser) defaultError() error {
-	err := fmt.Errorf("Invalid xml")
-	return err
+	return ErrInvalidXML
 }
 
 func (x *XMLParser) string(start byte) (string, error) {
@@ -826,9 +806,7 @@ func (x *XMLParser) string(start byte) (string, error) {
 
 		c, err = x.readByte()
 		if err != nil {
-			if err != nil {
-				return "", err
-			}
+			return "", err
 		}
 
 		if c == start {
@@ -842,7 +820,7 @@ func (x *XMLParser) string(start byte) (string, error) {
 }
 
 // scratch taken from
-//https://github.com/bcicen/jstream
+// https://github.com/bcicen/jstream
 type scratch struct {
 	data []byte
 	fill int
@@ -869,15 +847,4 @@ func (s *scratch) add(c byte) {
 
 	s.data[s.fill] = c
 	s.fill++
-}
-
-// append encoded rune to scratch buffer
-func (s *scratch) addRune(r rune) int {
-	if s.fill+utf8.UTFMax >= cap(s.data) {
-		s.grow()
-	}
-
-	n := utf8.EncodeRune(s.data[s.fill:], r)
-	s.fill += n
-	return n
 }

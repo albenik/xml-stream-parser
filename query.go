@@ -54,7 +54,7 @@ func findOne(top *XMLElement, expr string) (*XMLElement, error) {
 	t := exp.Select(createXPathNavigator(top))
 	var elem *XMLElement
 	if t.MoveNext() {
-		elem = t.Current().(*XmlNodeNavigator).curr //getCurrentNode(t)
+		elem = t.Current().(*XmlNodeNavigator).curr // getCurrentNode(t)
 	}
 	return elem, nil
 }

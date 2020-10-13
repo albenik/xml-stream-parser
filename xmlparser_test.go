@@ -1,4 +1,4 @@
-package xmlparser
+package xmlparser_test
 
 import (
 	"bufio"
@@ -7,20 +7,22 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	xmlparser "github.com/albenik/xml-stream-parser"
 )
 
-func getparser(prop ...string) *XMLParser {
+func getparser(prop ...string) *xmlparser.XMLParser {
 
 	return getparserFile("sample.xml", prop...)
 }
 
-func getparserFile(filename string, prop ...string) *XMLParser {
+func getparserFile(filename string, prop ...string) *xmlparser.XMLParser {
 
 	file, _ := os.Open(filename)
 
 	br := bufio.NewReader(file)
 
-	p := NewXMLParser(br, prop...)
+	p := xmlparser.NewXMLParser(br, prop...)
 
 	return p
 
@@ -30,7 +32,7 @@ func TestBasics(t *testing.T) {
 
 	p := getparser("tag1")
 
-	var results []*XMLElement
+	results := make([]*xmlparser.XMLElement, 0, 8)
 	for xml := range p.Stream() {
 		results = append(results, xml)
 	}
@@ -74,7 +76,7 @@ func TestBasics(t *testing.T) {
 		panic("Test failed")
 	}
 
-	//result 2
+	// result 2
 	if results[1].Attrs["att1"] != "<att1>" || results[1].Attrs["att2"] != "att1" {
 		panic("Test failed")
 	}
@@ -108,7 +110,7 @@ func TestTagWithNoChild(t *testing.T) {
 
 	p := getparser("tag2")
 
-	var results []*XMLElement
+	results := make([]*xmlparser.XMLElement, 0, 8)
 	for xml := range p.Stream() {
 		results = append(results, xml)
 	}
@@ -150,7 +152,7 @@ func TestTagWithSpaceAndSkipOutElement(t *testing.T) {
 
 	p := getparser("tag4").SkipElements([]string{"skipOutsideTag"}).SkipOuterElements()
 
-	var results []*XMLElement
+	results := make([]*xmlparser.XMLElement, 0, 8)
 	for xml := range p.Stream() {
 		results = append(results, xml)
 	}
@@ -173,7 +175,7 @@ func TestQuote(t *testing.T) {
 
 	p := getparser("quotetest")
 
-	var results []*XMLElement
+	results := make([]*xmlparser.XMLElement, 0, 8)
 	for xml := range p.Stream() {
 		results = append(results, xml)
 	}
@@ -192,7 +194,7 @@ func TestSkip(t *testing.T) {
 
 	p := getparser("tag1").SkipElements([]string{"tag11", "tag13"})
 
-	var results []*XMLElement
+	results := make([]*xmlparser.XMLElement, 0, 8)
 	for xml := range p.Stream() {
 		results = append(results, xml)
 	}
@@ -305,7 +307,7 @@ func TestXpath(t *testing.T) {
 
 	bufreader := bufio.NewReader(sreader)
 
-	p := NewXMLParser(bufreader, "bookstore").EnableXpath()
+	p := xmlparser.NewXMLParser(bufreader, "bookstore").EnableXpath()
 
 	for xml := range p.Stream() {
 
@@ -380,7 +382,7 @@ func TestXpathNS(t *testing.T) {
 		</soap:Envelope>
 	`)))
 
-	str := NewXMLParser(br, "soap:Envelope").EnableXpath()
+	str := xmlparser.NewXMLParser(br, "soap:Envelope").EnableXpath()
 	for xml := range str.Stream() {
 
 		if list, err := xml.SelectElements("soap:Body"); len(list) != 2 || err != nil {

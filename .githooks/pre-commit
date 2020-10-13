@@ -1,0 +1,8 @@
+#!/bin/bash
+
+printf "Checking codestyle...\n"
+golangci-lint run
+
+printf "Tidying up...\n\n"
+go mod tidy
+git add go.mod go.sum
